@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  mqtt-broker:
+    image: eclipse-mosquitto
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+
+  validator1:
+    build: .
+    command: python fog_layer/validator.py
+    environment:
+      - NODE_ID=validator1
+    depends_on:
+      - mqtt-broker
+
+  validator2:
+    build: .
+    command: python fog_layer/validator.py
+    environment:
+      - NODE_ID=validator2
+    depends_on:
+      - mqtt-broker
+
+  sensor1:
+    build: .
+    command: python edge_layer/device.py
+    environment:
+      - DEVICE_ID=sensor1
+      - DEVICE_TYPE=temperature
+    depends_on:
+      - mqtt-broker
+
+  visualizer:
+    build: .
+    command: python visual_app.py
+    ports:
+      - "8080:8080"
+    depends_on:
+      - validator1
+      - validator2
